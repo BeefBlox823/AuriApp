@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AURI — Adaptive Universal Reasoning Intelligence</title>
+<meta name="description" content="AURI — your adaptive universal reasoning intelligence. A complete AI assistant that runs right in your browser. Chat, plan, build, and calculate money — no account needed." />
+<meta name="theme-color" content="#0a0e18" />
+<link rel="manifest" id="appManifest" />
+<style>
+  :root {
+    --bg:#0a0e18; --panel:#111827; --panel2:#1a2236; --line:#26314c;
+    --text:#e9eef8; --muted:#8b96b3; --accent:#6c8cff; --accent2:#a06bff;
+    --user:#2b3a5e; --ok:#37d3a0; --warn:#ffb454; --danger:#ff6b6b;
+    --radius:14px; --shadow:0 24px 70px rgba(0,0,0,.5);
+  }
+  [data-theme="light"] {
+    --bg:#eef1f8; --panel:#ffffff; --panel2:#f1f4fb; --line:#d7def0;
+    --text:#1a2030; --muted:#5b6784; --user:#dbe4ff; --shadow:0 18px 50px rgba(20,30,60,.12);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1100px 700px at 18% -12%,#1b2442 0%,var(--bg) 55%);
+    color:var(--text); display:flex; flex-direction:column; height:100%; overflow:hidden;
+    transition:background .3s,color .3s;
+  }
+  header{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;
+    border-bottom:1px solid var(--line);background:rgba(10,14,24,.55);backdrop-filter:blur(10px);
+    flex:0 0 auto;z-index:6;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;color:#fff;
+    box-shadow:0 6px 22px rgba(108,140,255,.45);}
+  .brand h1{font-size:20px;letter-spacing:.3px;}
+  .brand p{font-size:11.5px;color:var(--muted);margin-top:1px;}
+  .right{display:flex;align-items:center;gap:10px;}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);}
+  .actions{display:flex;gap:8px;}
+  .icon-btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:8px 12px;border-radius:10px;
+    cursor:pointer;font-size:13px;transition:.15s;}
+  .icon-btn:hover{background:#243052;border-color:#31406a;}
+  [data-theme="light"] .icon-btn:hover{background:#e4eaf8;border-color:#c4cfe8;}
+  .tabs{display:flex;gap:6px;padding:12px 22px 0;flex:0 0 auto;flex-wrap:wrap;}
+  .tab{background:transparent;border:none;color:var(--muted);font-size:14px;font-weight:600;padding:10px 16px;
+    cursor:pointer;border-bottom:2px solid transparent;transition:.15s;}
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .suggestions{display:flex;gap:8px;overflow-x:auto;padding:10px 22px;flex:0 0 auto;scrollbar-width:none;}
+  .suggestions::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:8px 14px;
+    border-radius:999px;cursor:pointer;font-size:13px;white-space:nowrap;transition:.15s;}
+  .chip:hover{color:#fff;border-color:var(--accent);background:#1c2640;}
+  [data-theme="light"] .chip:hover{color:#1a2030;background:#e7edfb;}
+  main{flex:1 1 auto;overflow-y:auto;padding:20px 22px 8px;display:flex;flex-direction:column;gap:16px;}
+  .msg{display:flex;gap:12px;max-width:860px;width:100%;margin:0 auto;animation:pop .25s ease;}
+  @keyframes pop{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .avatar{width:34px;height:34px;border-radius:10px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;}
+  .msg.ai .avatar{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+  .msg.user{flex-direction:row-reverse;margin-left:auto;}
+  .msg.user .avatar{background:var(--user);color:#c8d2ee;}
+  .bubble{background:var(--panel);border:1px solid var(--line);padding:12px 16px;border-radius:var(--radius);
+    line-height:1.6;font-size:14.5px;overflow-wrap:anywhere;max-width:100%;}
+  .msg.user .bubble{background:var(--user);border-color:#3a4f80;}
+  .bubble p{margin:7px 0;}
+  .bubble p:first-child{margin-top:0;}.bubble p:last-child{margin-bottom:0;}
+  .bubble code{background:#0d1526;border:1px solid var(--line);padding:1px 6px;border-radius:6px;font-size:13px;
+    font-family:'SF Mono',Menlo,Consolas,monospace;color:#9fc0ff;}
+  [data-theme="light"] .bubble code{background:#eef2fb;color:#3347b0;}
+  .bubble ul,.bubble ol{margin:8px 0 8px 22px;}
+  .bubble h3{font-size:15px;margin:10px 0 4px;color:#c6d2ff;}
+  [data-theme="light"] .bubble h3{color:#3347b0;}
+  .bubble table{border-collapse:collapse;margin:10px 0;width:100%;font-size:13.5px;}
+  .bubble th,.bubble td{border:1px solid var(--line);padding:6px 9px;text-align:left;}
+  .bubble th{background:var(--panel2);}
+  .copy{float:right;font-size:11px;color:var(--muted);background:var(--panel2);border:1px solid var(--line);
+    border-radius:6px;padding:3px 8px;cursor:pointer;margin-left:8px;}
+  .copy:hover{color:#fff;border-color:var(--accent);}
+  #panel{flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column;}
+  #chat{flex:1 1 auto;overflow-y:auto;padding:20px 22px 8px;display:flex;flex-direction:column;gap:16px;}
+  .tabpage{flex:1 1 auto;overflow-y:auto;}
+  .card{max-width:860px;margin:8px auto 20px;width:calc(100% - 44px);background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);}
+  .card h2{font-size:18px;margin-bottom:4px;}
+  .card .sub{color:var(--muted);font-size:13px;margin-bottom:18px;}
+  .calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;}
+  .field input,.field select,.field textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:9px 11px;font-size:14px;outline:none;font-family:inherit;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+  .field textarea{min-height:120px;resize:vertical;}
+  .calc-actions{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+  .btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;
+    padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;}
+  .btn:hover{filter:brightness(1.1);}
+  .btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line);}
+  .btn.ghost:hover{background:#243052;border-color:#31406a;}
+  #calcResult,.toolResult{margin-top:16px;display:none;}
+  .calc-result{border:1px solid var(--accent);border-radius:12px;padding:16px 18px;background:var(--panel2);}
+  .calc-result .big{font-size:26px;font-weight:800;color:var(--accent);margin:6px 0 2px;}
+  .calc-result .small{color:var(--muted);font-size:13px;}
+  .calc-result .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px;}
+  .calc-result .row:last-child{border-bottom:none;}
+  .calc-result .row span:last-child{font-weight:600;}
+  .seg{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .seg button{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:9px;border-radius:9px;
+    cursor:pointer;font-size:13.5px;font-weight:600;transition:.15s;}
+  .seg button.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent;}
+  .metric{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;}
+  .metric .m{flex:1;min-width:130px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center;}
+  .metric .m .num{font-size:22px;font-weight:800;color:var(--accent);}
+  .metric .m .lab{font-size:12px;color:var(--muted);margin-top:3px;}
+  .inline{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+  .inline input{flex:1;min-width:200px;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    border-radius:9px;padding:9px 11px;font-size:14px;outline:none;}
+  footer{flex:0 0 auto;padding:12px 22px 16px;}
+  .inputwrap{max-width:860px;margin:0 auto;display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);
+    border-radius:16px;padding:8px 8px 8px 18px;align-items:center;box-shadow:var(--shadow);}
+  textarea#input{flex:1;background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:inherit;
+    font-size:15px;max-height:140px;padding:8px 0;line-height:1.4;}
+  textarea#input::placeholder{color:var(--muted);}
+  .send{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:12px;
+    width:44px;height:44px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;
+    transition:.15s;flex:0 0 auto;}
+  .send:hover{filter:brightness(1.1);}.send:active{transform:scale(.95);}
+  .hint{text-align:center;font-size:12px;color:var(--muted);margin-top:10px;}
+  .typing{display:inline-flex;gap:4px;align-items:center;}
+  .typing span{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite;}
+  .typing span:nth-child(2){animation-delay:.2s;}.typing span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+  ::-webkit-scrollbar{width:9px;}
+  ::-webkit-scrollbar-thumb{background:#253050;border-radius:9px;}
+  .footer-cta{text-align:center;font-size:11.5px;color:var(--muted);padding-top:8px;}
+  /* ---------- PREMIUM ---------- */
+  .premium-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;}
+  .premium-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;}
+  .premium-head{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .premium-head h3{font-size:16px;}
+  .premium-head .flag{font-size:12px;color:var(--muted);}
+  .badge{background:linear-gradient(135deg,#ffb454,#ff6b6b);color:#2a1200;font-weight:800;font-size:12px;padding:4px 10px;border-radius:999px;}
+  .premium-body{padding:16px 18px;flex:1;}
+  .locked{position:relative;border:1px dashed var(--line);border-radius:12px;padding:14px;}
+  .locked .content{filter:blur(6px);pointer-events:none;user-select:none;}
+  .lock-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(10,14,24,.6);border-radius:12px;z-index:3;}
+  .lock-icon{font-size:36px;}
+  .lock-overlay .lock-msg{font-size:13px;color:var(--muted);text-align:center;padding:0 16px;}
+  .premium-footer{padding:12px 18px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+  .price{font-weight:800;font-size:19px;color:var(--accent);}
+  .btn.gold{background:linear-gradient(135deg,#ffb454,#ff6b6b);color:#2a1200;}
+  .btn.gold:hover{filter:brightness(1.06);}
+  .owned{background:linear-gradient(135deg,var(--ok),#37d3a0);color:#03211a;font-weight:700;font-size:13px;padding:6px 12px;border-radius:9px;}
+  .control{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+  .control label{font-size:12px;color:var(--muted);}
+  .control .val{float:right;font-weight:700;color:var(--text);}
+  .control input[type=range]{width:100%;accent-color:var(--accent);}
+  canvas#wealthChart{width:100%;height:auto;margin-top:6px;}
+  .copyblock{margin-top:12px;background:var(--panel2);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;white-space:pre-wrap;line-height:1.55;font-size:14px;}
+  .prem-note{margin-top:14px;font-size:12px;color:var(--muted);text-align:center;}
+  .prem-note code{background:#0d1526;border:1px solid var(--line);padding:1px 6px;border-radius:6px;color:#9fc0ff;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">A</div>
+    <div>
+      <h1>AURI</h1>
+      <p>Adaptive · Universal · Reasoning · Intelligence</p>
+    </div>
+  </div>
+  <div class="right">
+    <div class="status"><span class="dot"></span><span id="modeLabel">Local engine</span></div>
+    <div class="actions">
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">🌗</button>
+      <button class="icon-btn" id="exportBtn" title="Export chat">⬇</button>
+      <button class="icon-btn" id="clearBtn" title="Clear conversation">Clear</button>
+      <button class="icon-btn" id="modeBtn" title="Connect AI provider">⚙️ AI</button>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-tab="chat">💬 Assistant</button>
+  <button class="tab" data-tab="money">🧮 Money Tools</button>
+  <button class="tab" data-tab="text">✏️ Text Tools</button>
+  <button class="tab" data-tab="premium">💎 Premium</button>
+</div>
+
+<div class="suggestions" id="suggestions">
+  <button class="chip">What can you do?</button>
+  <button class="chip">Write a product description</button>
+  <button class="chip">Turn $500 into a plan</button>
+  <button class="chip">Explain investing simply</button>
+  <button class="chip">Brainstorm a business idea</button>
+  <button class="chip">Write a business email</button>
+  <button class="chip">Plan my day</button>
+</div>
+
+<div id="panel">
+  <div id="chat"></div>
+
+  <div class="tabpage" id="page-money" style="display:none">
+    <div class="card">
+      <h2>🧮 Money & Growth Tools</h2>
+      <p class="sub">Real calculators that run instantly in your browser. Pick a tool, enter your numbers, hit calculate.</p>
+      <div class="seg" id="seg">
+        <button data-tool="compound" class="active">Compound Growth</button>
+        <button data-tool="savings">Savings Goal</button>
+        <button data-tool="budget">50/30/20 Budget</button>
+        <button data-tool="price">Price Markup</button>
+        <button data-tool="currency">Currency Convert</button>
+      </div>
+      <div class="calc-grid" id="calcFields"></div>
+      <div class="calc-actions">
+        <button class="btn" id="calcBtn">Calculate</button>
+      </div>
+      <div id="calcResult"></div>
+    </div>
+  </div>
+
+  <div class="tabpage" id="page-text" style="display:none">
+    <div class="card">
+      <h2>✏️ Text Tools</h2>
+      <p class="sub">Fast text utilities that run instantly. Paste text below and pick a tool.</p>
+      <div class="field"><label>Your text</label><textarea id="txtInput" placeholder="Paste or type your text here…"></textarea></div>
+      <div class="metric" id="txtMetrics"></div>
+      <div class="seg" id="txtSeg">
+        <button data-tool="upper">UPPERCASE</button>
+        <button data-tool="lower">lowercase</button>
+        <button data-tool="title">Title Case</button>
+        <button data-tool="clean">Clean up</button>
+        <button data-tool="reverse">Reverse</button>
+      </div>
+      <div class="inline">
+        <input id="txtFind" placeholder="Find (for replace)" />
+        <input id="txtReplace" placeholder="Replace with (leave empty to remove)" />
+      </div>
+      <div class="calc-actions">
+        <button class="btn" id="txtApply">Apply</button>
+        <button class="btn ghost" id="txtCopy">Copy result</button>
+      </div>
+      <div class="toolResult"><div class="calc-result" id="txtResult"></div></div>
+    </div>
+  </div>
+
+  <div class="tabpage" id="page-premium" style="display:none">
+    <div class="card">
+      <h2>💎 AURI Premium</h2>
+      <p class="sub">Two powerful premium tools. Unlock once, own forever — your purchases are stored safely in your browser.</p>
+      <div class="premium-grid">
+
+        <div class="premium-card">
+          <div class="premium-head"><h3>📈 Wealth Studio</h3><span class="badge">PRO</span></div>
+          <div class="premium-body">
+            <p class="sub">A live, interactive investment-growth chart with scenario comparison. Drag the sliders and watch your money grow in real time.</p>
+            <div class="locked" id="wealthLock">
+              <div class="content" id="wealthContent">
+                <div class="control"><label>Monthly contribution <span class="val" id="wMonthlyVal">$300</span></label><input type="range" id="wMonthly" min="0" max="2000" step="25" value="300" /></div>
+                <div class="control"><label>Time horizon <span class="val" id="wYearsVal">20 yrs</span></label><input type="range" id="wYears" min="1" max="40" step="1" value="20" /></div>
+                <div class="control"><label>Annual return <span class="val" id="wRateVal">7%</span></label><input type="range" id="wRate" min="1" max="15" step="0.5" value="7" /></div>
+                <canvas id="wealthChart" width="600" height="260"></canvas>
+                <div id="wealthStats"></div>
+              </div>
+              <div class="lock-overlay" id="wealthOverlay"><span class="lock-icon">🔒</span><div class="lock-msg">Interactive growth charting with live scenario comparison</div><button class="btn gold" id="unlockWealth">Unlock · $4.99</button></div>
+            </div>
+          </div>
+          <div class="premium-footer"><span class="price" id="wealthPrice">$4.99</span><span class="sub">one-time</span></div>
+        </div>
+
+        <div class="premium-card">
+          <div class="premium-head"><h3>✨ Copy Pro</h3><span class="badge">PRO</span></div>
+          <div class="premium-body">
+            <p class="sub">Generate a full marketing kit in seconds — tagline, short description, social captions and feature bullets — in any tone.</p>
+            <div class="locked" id="copyLock">
+              <div class="content" id="copyContent">
+                <div class="field" style="margin-bottom:10px"><input id="cpName" placeholder="Product / business name" /></div>
+                <div class="field" style="margin-bottom:10px"><textarea id="cpDesc" placeholder="What it does, in one sentence"></textarea></div>
+                <div class="field" style="margin-bottom:10px"><select id="cpTone"><option>Friendly</option><option>Professional</option><option>Bold / Punchy</option><option>Minimal</option></select></div>
+                <div class="field"><input id="cpAudience" placeholder="Target audience (optional)" /></div>
+                <div class="calc-actions" style="margin-top:12px"><button class="btn" id="cpGo">Generate copy kit</button></div>
+                <div class="copyblock" id="cpOut" style="display:none"></div>
+              </div>
+              <div class="lock-overlay" id="copyOverlay"><span class="lock-icon">🔒</span><div class="lock-msg">Full marketing copy generator with tone control</div><button class="btn gold" id="unlockCopy">Unlock · $2.99</button></div>
+            </div>
+          </div>
+          <div class="premium-footer"><span class="price" id="copyPrice">$2.99</span><span class="sub">one-time</span></div>
+        </div>
+
+      </div>
+      <div class="prem-note">💡 Demo payments unlock instantly and are stored locally. To accept <b>real</b> payments, connect Stripe on Vercel — the unlock buttons then point at a checkout link (see your setup guide).</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="inputwrap">
+    <textarea id="input" placeholder="Ask AURI anything…" rows="1"></textarea>
+    <button class="send" id="sendBtn" title="Send">➤</button>
+  </div>
+  <div class="hint" id="hint">AURI runs fully in your browser — no account needed. Optionally connect an OpenAI-compatible API key for deeper reasoning.</div>
+  <div class="footer-cta">AURI · Adaptive Universal Reasoning Intelligence · Works offline · 100% private</div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var AI_CONFIG_KEY = "auri_ai_config";
+  var THEME_KEY = "auri_theme";
+  var CHAT_KEY = "auri_chat";
+
+  /* ---------- PWA manifest ---------- */
+  try {
+    var man = {
+      name: "AURI", short_name: "AURI", start_url: ".",
+      display: "standalone", background_color: "#0a0e18", theme_color: "#0a0e18",
+      icons: [{ src: "data:image/svg+xml;utf8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" rx="40" fill="#6c8cff"/><text x="96" y="128" font-size="110" font-family="Arial" font-weight="bold" fill="#fff" text-anchor="middle">A</text></svg>'), sizes: "192x192", type: "image/svg+xml", purpose: "any" }]
+    };
+    var mEl = document.getElementById("appManifest");
+    mEl.href = "data:application/manifest+json;base64," + btoa(JSON.stringify(man));
+  } catch (e) {}
+
+  /* ---------- LOCAL KNOWLEDGE ENGINE ---------- */
+  function localReply(raw) {
+    var q = raw.toLowerCase();
+    if (/^(hi|hello|hey|yo|sup|howdy|good (morning|afternoon|evening))([!.]*)$/.test(q)) {
+      return "<p>Hey! I'm <b>AURI</b> — <i>Adaptive Universal Reasoning Intelligence</i>.</p><p>I can help you <b>write, plan, brainstorm, explain, and build</b>. There's also <b>🧮 Money Tools</b> and <b>✏️ Text Tools</b> up top. What are we working on?</p>";
+    }
+    if (/what can you do|capabilities|your features|how do you work|about you/.test(q)) {
+      return "<p>Here's everything I can do right now in your browser:</p><ul>"
+        + "<li>✍️ <b>Write</b> — descriptions, emails, essays, pitches</li>"
+        + "<li>💡 <b>Brainstorm</b> — business ideas, names, angles</li>"
+        + "<li>📋 <b>Plan</b> — step-by-step strategies and daily plans</li>"
+        + "<li>🧮 <b>Money Tools</b> — compound growth, savings goals, budgets, markups, currency conversion</li>"
+        + "<li>✏️ <b>Text Tools</b> — case change, clean up, find &amp; replace, reverse</li>"
+        + "<li>🔧 <b>Build</b> — code snippets and small apps</li></ul>"
+        + "<p>Your chat auto-saves, so you can refresh and pick up where you left off. Connect an OpenAI-compatible key in <b>⚙️ AI</b> to add a live reasoning model.</p>";
+    }
+    if (/fast money|make money|earn money|side income|monetize|quick money|make cash/.test(q)) {
+      return "<p>Fast money = <b>selling a solution to a real, specific problem</b>. Here's the tight framework:</p>"
+        + "<h3>1. Pick a niche you know</h3><p>A specific group with a pain you can see.</p>"
+        + "<h3>2. Validate before building</h3><p>Ask 5–10 people in that niche if they'd pay for a fix.</p>"
+        + "<h3>3. Ship the smallest version</h3><p>One core feature. Launch it. Don't gold-plate.</p>"
+        + "<h3>4. Sell where they already are</h3><p>Communities and marketplaces where your niche hangs out.</p>"
+        + "<p>Tell me your <b>skills</b> or <b>niche</b> and I'll turn it into a concrete product + pitch. Or open <b>🧮 Money Tools</b> to run real numbers.</p>";
+    }
+    if (/business idea|app idea|startup|what should i build|brainstorm|product idea/.test(q)) {
+      return "<p>Quick brainstorm — tell me which direction grabs you:</p><ul>"
+        + "<li><b>Niche utility</b> — a tiny tool that saves one group time or money</li>"
+        + "<li><b>Automation</b> — remove a tedious manual step people repeat daily</li>"
+        + "<li><b>Content engine</b> — repackage knowledge into a product</li>"
+        + "<li><b>Marketplace gap</b> — where two groups need each other and no one serves them</li></ul>"
+        + "<p>What skills, interests, or networks do you already have? That's the best starting point.</p>";
+    }
+    if (/invest|stock|compound|crypto|retirement|grow money|saving money|interest/.test(q)) {
+      return "<p>Honest basics on growing money:</p>"
+        + "<h3>1. Pay off high-interest debt first</h3><p>Debt above ~8% usually costs more than investing earns.</p>"
+        + "<h3>2. Build an emergency fund</h3><p>3–6 months of expenses in a safe, liquid account.</p>"
+        + "<h3>3. Low-cost index funds beat most active bets</h3><p>Over decades, broad market index funds outperform most who try to time the market.</p>"
+        + "<h3>4. Let compounding work</h3><p>Time in the market beats timing the market.</p>"
+        + "<p>Open <b>🧮 Money Tools</b> → <b>Compound Growth</b> to see exactly how a monthly amount grows over years.</p>";
+    }
+    if (/currency|exchange rate|convert .* to|usd|euro|gbp/.test(q)) {
+      return "<p>Open the <b>🧮 Money Tools</b> tab and use <b>Currency Convert</b> for live exchange rates. It fetches real rates in your browser.</p><p>Want me to explain how exchange rates work instead?</p>";
+    }
+    if (/explain|simpl(e|ify)|what is|how does|understand|teach me/.test(q)) {
+      return "<p>Happy to break it down. Give me the <b>topic</b> and I'll explain it:</p><ol>"
+        + "<li>In plain, everyday language</li><li>From first principles</li><li>With a simple analogy</li></ol>"
+        + "<p>Then a one-line takeaway you can reuse. What's the topic?</p>";
+    }
+    if (/product description|app description|website description|write.*(bio|intro|about|blurb|pitch)|description for/.test(q)) {
+      return "<p>I'd love to write that. Give me:</p><ol><li>What it is (one sentence)</li><li>Who it's for</li><li>What makes it different</li><li>The tone (friendly, professional, punchy)</li></ol><p>Then I'll draft 2–3 sharp options.</p>";
+    }
+    if (/business email|email to|cold email|follow.?up|professional email/.test(q)) {
+      return "<p>I can draft a professional email. Tell me:</p><ol><li>Who you're writing to</li><li>What you want (intro, follow-up, request)</li><li>Any key details</li></ol><p>Then I'll write it ready to copy-paste.</p>";
+    }
+    if (/plan my day|daily plan|schedule|time management|organize my (day|week)/.test(q)) {
+      return "<p>Let's structure your day. Tell me:</p><ol><li>Your top 2–3 priorities today</li><li>Any fixed appointments</li><li>How many hours you have</li></ol><p>Then I'll lay out a realistic, focused plan with breaks.</p>";
+    }
+    if (/budget|spending|track.*money|expense/.test(q)) {
+      return "<p>Budgeting is where money habits are won. Use <b>🧮 Money Tools</b> → <b>50/30/20 Budget</b> to split income into needs, wants, and savings automatically.</p><p>Quick rule: <b>50% needs, 30% wants, 20% savings/debt.</b> Want me to explain how to adjust it for your situation?</p>";
+    }
+    if (/code|function|script|html|css|javascript|python|sql|regex|app|website|program|build me|small app/.test(q)) {
+      return "<p>I can build that. To give you exact, working code, tell me:</p><ol>"
+        + "<li>What you want it to do (one clear sentence)</li><li>The language/format (HTML, Python, JavaScript, SQL, CSS…)</li>"
+        + "<li>Any must-have features</li></ol><p>Then I'll write a complete snippet you can copy-paste.</p>";
+    }
+    if (/(thank|thanks|thx|appreciate)/.test(q)) return "<p>Anytime! Ping me when you're ready for the next piece.</p>";
+    if (/(bye|goodbye|see you|cya|later)/.test(q)) return "<p>Later! AURI's here whenever you need a hand.</p>";
+    return "<p>Here's how I'd approach <code>" + esc(raw.slice(0, 50)) + "</code>:</p>"
+      + "<ol><li><b>Clarify the goal</b> — what outcome do you actually want?</li><li><b>List the constraints</b> — time, budget, skills, audience.</li><li><b>Pick the smallest next step</b> — one action you can take today.</li></ol>"
+      + "<p>Give me a bit more detail and I'll give you a specific, concrete answer.</p>";
+  }
+
+  /* ---------- OPTIONAL AI PROVIDER ---------- */
+  function getAIConfig(){try{return JSON.parse(localStorage.getItem(AI_CONFIG_KEY)||"null");}catch(e){return null;}}
+  function aiEnabled(){var c=getAIConfig();return !!(c&&c.apiKey);}
+  async function aiReply(history, raw){
+    var c=getAIConfig();
+    var base=(c.baseUrl||"https://api.openai.com/v1").replace(/\/+$/,"");
+    var model=c.model||"gpt-4o-mini";
+    var messages=[{role:"system",content:"You are AURI, a friendly, concise, practical assistant. Give direct, useful answers in short paragraphs and lists."}];
+    history.forEach(function(m){if(m.role==="user"||m.role==="assistant")messages.push({role:m.role,content:m.text});});
+    var res=await fetch(base+"/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+c.apiKey},
+      body:JSON.stringify({model:model,messages:messages,temperature:0.7})});
+    if(!res.ok){var body=await res.text().catch(function(){return "";});throw new Error("API "+res.status+": "+body.slice(0,160));}
+    var data=await res.json();
+    return data.choices[0].message.content||"…";
+  }
+
+  /* ---------- RENDER + CHAT + PERSISTENCE ---------- */
+  function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+  var chatEl=document.getElementById("chat");
+  var inputEl=document.getElementById("input");
+  var sendBtn=document.getElementById("sendBtn");
+  var hintEl=document.getElementById("hint");
+  var modeLabel=document.getElementById("modeLabel");
+  var history=[];
+
+  function saveChat(){try{localStorage.setItem(CHAT_KEY,JSON.stringify(history));}catch(e){}}
+  function loadChat(){try{var h=JSON.parse(localStorage.getItem(CHAT_KEY)||"[]");return Array.isArray(h)?h:[];}catch(e){return [];}}
+
+  function updateModeUI(){
+    if(aiEnabled()){modeLabel.textContent="AI engine";hintEl.textContent="Connected to your AI provider. Clear it in ⚙️ AI to return to the local engine.";}
+    else{modeLabel.textContent="Local engine";hintEl.textContent="AURI runs fully in your browser — no account needed. Optionally connect an OpenAI-compatible API key for deeper reasoning.";}
+  }
+
+  function addMessage(role, html, raw){
+    var wrap=document.createElement("div");wrap.className="msg "+role;
+    var av=document.createElement("div");av.className="avatar";av.textContent=role==="ai"?"A":"Y";
+    var bub=document.createElement("div");bub.className="bubble";
+    if(role==="ai")bub.innerHTML=html;else bub.textContent=raw;
+    wrap.appendChild(av);wrap.appendChild(bub);chatEl.appendChild(wrap);
+    chatEl.scrollTop=chatEl.scrollHeight;
+    return bub;
+  }
+
+  function showTyping(){
+    var wrap=document.createElement("div");wrap.className="msg ai";wrap.id="typing";
+    var av=document.createElement("div");av.className="avatar";av.textContent="A";
+    var bub=document.createElement("div");bub.className="bubble";
+    bub.innerHTML='<span class="typing"><span></span><span></span><span></span></span>';
+    wrap.appendChild(av);wrap.appendChild(bub);chatEl.appendChild(wrap);chatEl.scrollTop=chatEl.scrollHeight;
+  }
+  function removeTyping(){var t=document.getElementById("typing");if(t)t.remove();}
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+  async function send(){
+    var raw=inputEl.value.trim();if(!raw)return;
+    inputEl.value="";autoGrow();
+    history.push({role:"user",text:raw});addMessage("user",null,raw);saveChat();showTyping();
+    if(aiEnabled()){
+      try{
+        var reply=await aiReply(history.slice(0,-1),raw);
+        history.push({role:"assistant",text:reply});saveChat();removeTyping();
+        renderAI(reply);return;
+      }catch(e){
+        removeTyping();
+        addMessage("ai","<p>⚠️ The AI provider errored: <code>"+esc(e.message)+"</code></p><p>Retry, or clear the key in ⚙️ AI to fall back to the built-in local engine (no key needed).</p>",e.message);
+        return;
+      }
+    }
+    await sleep(300);removeTyping();
+    var html=localReply(raw);
+    history.push({role:"assistant",text:raw+"\n\n"+html.replace(/<[^>]+>/g,"")});saveChat();
+    var bub=addMessage("ai",html,raw);addCopy(bub);
+  }
+
+  function renderAI(text){
+    var html="<p>"+esc(text).replace(/\n/g,"</p><p>")+"</p>";
+    var bub=addMessage("ai",html,text);addCopy(bub);
+  }
+  function addCopy(bub){
+    var b=document.createElement("button");b.className="copy";b.textContent="copy";
+    b.addEventListener("click",function(){
+      var txt=bub.innerText.replace("copy","").trim();
+      if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){b.textContent="copied ✓";setTimeout(function(){b.textContent="copy";},1400);});}
+    });
+    bub.insertBefore(b,bub.firstChild);
+  }
+
+  function autoGrow(){inputEl.style.height="auto";inputEl.style.height=Math.min(inputEl.scrollHeight,140)+"px";}
+
+  function greetingHTML(){
+    return "<p>Hi! I'm <b>AURI</b> — <i>Adaptive Universal Reasoning Intelligence</i>.</p>"
+      +"<p>Ask me anything: <b>write, plan, brainstorm, explain, build</b>. Or use <b>🧮 Money Tools</b> and <b>✏️ Text Tools</b> up top. Pick a suggestion below or just type.</p>";
+  }
+
+  function clearChat(){
+    chatEl.innerHTML="";history=[];localStorage.removeItem(CHAT_KEY);
+    addMessage("ai",greetingHTML());
+  }
+
+  function restoreChat(){
+    chatEl.innerHTML="";
+    var h=loadChat();
+    if(h.length===0){addMessage("ai",greetingHTML());return;}
+    h.forEach(function(m){
+      if(m.role==="user"){addMessage("user",null,m.text);}
+      else{var bub=addMessage("ai","<p>"+esc(m.text).replace(/\n/g,"</p><p>")+"</p>",m.text);addCopy(bub);}
+    });
+    chatEl.scrollTop=chatEl.scrollHeight;
+  }
+
+  /* ---------- MONEY TOOLS ---------- */
+  var tools={
+    compound:{label:"Compound Growth",fields:[
+      {k:"principal",label:"Starting amount ($)",type:"number",val:"1000"},
+      {k:"monthly",label:"Monthly addition ($)",type:"number",val:"100"},
+      {k:"rate",label:"Annual interest rate (%)",type:"number",val:"7"},
+      {k:"years",label:"Years",type:"number",val:"20"}
+    ],calc:function(v){
+      var p=+v.principal||0,m=+v.monthly||0,r=(+v.rate||0)/100/12,n=+v.years||0,months=n*12,total=p;
+      for(var i=0;i<months;i++){total=(total+m)*(1+r);}
+      var invested=p+m*months,growth=total-invested;
+      return {big:fmt(total),rows:[["Total you invest",fmt(invested)],["Growth from compounding",fmt(growth)]]};
+    }},
+    savings:{label:"Savings Goal",fields:[
+      {k:"goal",label:"Goal amount ($)",type:"number",val:"10000"},
+      {k:"have",label:"Already saved ($)",type:"number",val:"500"},
+      {k:"rate",label:"Interest rate (%)",type:"number",val:"3"},
+      {k:"years",label:"Years to save",type:"number",val:"3"}
+    ],calc:function(v){
+      var goal=+v.goal||0,have=+v.have||0,r=(+v.rate||0)/100/12,months=(+v.years||0)*12;
+      var fv=goal-have*Math.pow(1+r,months);
+      var pmt=months>0?fv*r/(Math.pow(1+r,months)-1):0;
+      if(!isFinite(pmt)||pmt<0)pmt=0;
+      return {big:"$"+fmt2(pmt)+"/mo",rows:[["Monthly you need to save","$"+fmt2(pmt)],["Total you'll contribute","$"+fmt(have+pmt*months)]]};
+    }},
+    budget:{label:"50/30/20 Budget",fields:[
+      {k:"income",label:"Monthly income after tax ($)",type:"number",val:"4000"}
+    ],calc:function(v){
+      var inc=+v.income||0;
+      return {big:"$"+fmt(inc)+"/mo",rows:[["Needs (50%)","$"+fmt(inc*0.5)],["Wants (30%)","$"+fmt(inc*0.3)],["Savings & Debt (20%)","$"+fmt(inc*0.2)]]};
+    }},
+    price:{label:"Price Markup",fields:[
+      {k:"cost",label:"Your cost ($)",type:"number",val:"20"},
+      {k:"margin",label:"Target margin (%)",type:"number",val:"40"}
+    ],calc:function(v){
+      var cost=+v.cost||0,margin=(+v.margin||0)/100;
+      var price=cost/(1-margin),profit=price-cost;
+      return {big:"$"+fmt2(price),rows:[["Selling price","$"+fmt2(price)],["Profit per sale","$"+fmt2(profit)]]};
+    }},
+    currency:{label:"Currency Convert",fields:[
+      {k:"amt",label:"Amount",type:"number",val:"100"},
+      {k:"from",label:"From",type:"select",options:["USD","EUR","GBP","JPY","CAD","AUD","CHF","CNY","INR","BRL"],val:"USD"},
+      {k:"to",label:"To",type:"select",options:["EUR","USD","GBP","JPY","CAD","AUD","CHF","CNY","INR","BRL"],val:"EUR"}
+    ],calc:function(v){return {note:"Fetching live rate…"};}}
+  };
+  function fmt(n){return "$"+Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");}
+  function fmt2(n){return Math.round(n*100)/100;}
+
+  var currentTool="compound";
+  var fieldsEl=document.getElementById("calcFields");
+  function renderFields(){
+    var t=tools[currentTool];
+    fieldsEl.innerHTML=t.fields.map(function(f){
+      var inner=f.type==="select"
+        ? '<select id="cf_'+f.k+'">'+f.options.map(function(o){return '<option '+(o===f.val?'selected':'')+'>'+o+'</option>';}).join("")+'</select>'
+        : '<input type="number" id="cf_'+f.k+'" value="'+f.val+'">';
+      return '<div class="field"><label>'+f.label+'</label>'+inner+'</div>';
+    }).join("");
+    document.querySelectorAll("#seg button").forEach(function(b){b.classList.toggle("active",b.dataset.tool===currentTool);});
+    document.getElementById("calcResult").style.display="none";
+  }
+  document.getElementById("seg").addEventListener("click",function(e){
+    if(e.target.tagName==="BUTTON"&&e.target.dataset.tool){currentTool=e.target.dataset.tool;renderFields();}
+  });
+
+  function showCalcResult(r,label){
+    var resEl=document.getElementById("calcResult");
+    resEl.style.display="block";
+    resEl.innerHTML='<div class="calc-result"><div class="small">'+label+' result</div>'
+      +'<div class="big">'+r.big+'</div>'
+      +r.rows.map(function(x){return '<div class="row"><span>'+x[0]+'</span><span>'+x[1]+'</span></div>';}).join("")
+      +(r.note?'<div class="small" style="margin-top:8px">'+r.note+'</div>':"")
+      +'</div>';
+  }
+
+  document.getElementById("calcBtn").addEventListener("click",function(){
+    var t=tools[currentTool];var v={};
+    t.fields.forEach(function(f){v[f.k]=document.getElementById("cf_"+f.k).value;});
+    if(currentTool==="currency"){convertCurrency(v);return;}
+    showCalcResult(t.calc(v),t.label);
+  });
+
+  function convertCurrency(v){
+    var amt=+v.amt||0,from=v.from,to=v.to;
+    var resEl=document.getElementById("calcResult");
+    resEl.style.display="block";
+    resEl.innerHTML='<div class="calc-result"><div class="small">Currency Convert</div><div class="big">…</div><div class="small">Fetching live exchange rate…</div></div>';
+    fetch("https://open.er-api.com/v6/latest/"+encodeURIComponent(from))
+      .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
+      .then(function(d){
+        if(d.result!=="success"||!d.rates||!d.rates[to])throw new Error("Rate unavailable");
+        var rate=d.rates[to];
+        var out=amt*rate;
+        resEl.innerHTML='<div class="calc-result"><div class="small">'+from+' → '+to+'</div>'
+          +'<div class="big">'+fmtCur(out)+'</div>'
+          +'<div class="row"><span>Exchange rate</span><span>1 '+from+' = '+rate+' '+to+'</span></div>'
+          +'<div class="row"><span>You entered</span><span>'+amt+' '+from+'</span></div>'
+          +'<div class="small" style="margin-top:8px">Live rate via open.er-api.com (updates daily)</div></div>';
+      })
+      .catch(function(e){
+        resEl.innerHTML='<div class="calc-result"><div class="small">Currency Convert</div><div class="big">⚠️</div>'
+          +'<div class="small">Could not fetch live rates: '+esc(e.message)+'. Check your internet connection.</div></div>';
+      });
+  }
+  function fmtCur(n){var r=Math.round(n*100)/100;return r.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+  /* ---------- TEXT TOOLS ---------- */
+  function txtStats(s){
+    var words=s.trim()?s.trim().split(/\s+/).length:0;
+    var chars=s.length;var charsNoSpace=s.replace(/\s/g,"").length;
+    return '<div class="metric">'
+      +'<div class="m"><div class="num">'+words+'</div><div class="lab">words</div></div>'
+      +'<div class="m"><div class="num">'+chars+'</div><div class="lab">characters</div></div>'
+      +'<div class="m"><div class="num">'+charsNoSpace+'</div><div class="lab">chars (no spaces)</div></div>'
+      +'<div class="m"><div class="num">'+(s.trim()?s.trim().split(/\s+/).length:0)+'</div><div class="lab">reading ~'+(Math.ceil(words/220))+' min</div></div>'
+      +'</div>';
+  }
+  var txtInput=document.getElementById("txtInput");
+  var lastTxtTool="upper";var lastResult="";
+  function txtUpdateStats(){document.getElementById("txtMetrics").innerHTML=txtStats(txtInput.value);}
+  txtInput.addEventListener("input",txtUpdateStats);
+
+  document.getElementById("txtSeg").addEventListener("click",function(e){
+    if(e.target.tagName==="BUTTON"&&e.target.dataset.tool){lastTxtTool=e.target.dataset.tool;}
+    document.querySelectorAll("#txtSeg button").forEach(function(b){b.classList.toggle("active",b.dataset.tool===lastTxtTool);});
+  });
+
+  document.getElementById("txtApply").addEventListener("click",function(){
+    var s=txtInput.value;if(!s){return;}
+    var find=document.getElementById("txtFind").value;
+    var replace=document.getElementById("txtReplace").value;
+    if(find){s=s.split(find).join(replace);}
+    else{
+      switch(lastTxtTool){
+        case "upper":s=s.toUpperCase();break;
+        case "lower":s=s.toLowerCase();break;
+        case "title":s=s.replace(/\w\S*/g,function(t){return t.charAt(0).toUpperCase()+t.substr(1).toLowerCase();});break;
+        case "clean":s=s.replace(/[ \t]+/g," ").replace(/\n{3,}/g,"\n\n").trim();break;
+        case "reverse":s=s.split("").reverse().join("");break;
+      }
+    }
+    lastResult=s;
+    var box=document.getElementById("txtResult").parentNode;
+    box.style.display="block";
+    document.getElementById("txtResult").textContent=s;
+    txtInput.value=s;txtUpdateStats();
+  });
+
+  document.getElementById("txtCopy").addEventListener("click",function(){
+    if(navigator.clipboard&&lastResult){navigator.clipboard.writeText(lastResult);document.getElementById("txtCopy").textContent="copied ✓";setTimeout(function(){document.getElementById("txtCopy").textContent="Copy result";},1400);}
+  });
+
+  /* ---------- PREMIUM ---------- */
+  var PREM_KEY="auri_premium";
+  function owns(){try{return JSON.parse(localStorage.getItem(PREM_KEY)||"{}");}catch(e){return {};}}
+  function updatePremiumUI(){
+    var o=owns();
+    if(o.wealth){
+      document.getElementById("wealthOverlay").style.display="none";
+      document.getElementById("wealthPrice").textContent="OWNED";
+      document.getElementById("wealthPrice").className="owned";
+      drawWealth();
+    }
+    if(o.copy){
+      document.getElementById("copyOverlay").style.display="none";
+      document.getElementById("copyPrice").textContent="OWNED";
+      document.getElementById("copyPrice").className="owned";
+    }
+  }
+  document.getElementById("unlockWealth").addEventListener("click",function(){var o=owns();o.wealth=true;localStorage.setItem(PREM_KEY,JSON.stringify(o));updatePremiumUI();});
+  document.getElementById("unlockCopy").addEventListener("click",function(){var o=owns();o.copy=true;localStorage.setItem(PREM_KEY,JSON.stringify(o));updatePremiumUI();});
+
+  function shortNum(n){if(n>=1e6)return (n/1e6).toFixed(1)+"M";if(n>=1e3)return (n/1e3).toFixed(0)+"K";return Math.round(n);}
+  function drawWealth(){
+    var c=document.getElementById("wealthChart");if(!c)return;
+    var ctx=c.getContext("2d");var W=c.width,H=c.height;
+    var monthly=+document.getElementById("wMonthly").value||0;
+    var years=+document.getElementById("wYears").value||20;
+    var rate=+document.getElementById("wRate").value||7;
+    document.getElementById("wMonthlyVal").textContent="$"+monthly;
+    document.getElementById("wYearsVal").textContent=years+" yrs";
+    document.getElementById("wRateVal").textContent=rate+"%";
+    var r=rate/100/12;var months=years*12;
+    var pts=[];var prev=0,total=0;
+    for(var i=0;i<=months;i++){prev=prev*(1+r)+monthly;pts.push(prev);}
+    total=pts[months];var inv=monthly*months;
+    ctx.clearRect(0,0,W,H);
+    var maxV=total>0?total:1;
+    var padL=56,padB=24,padT=16,padR=12,plotW=W-padL-padR,plotH=H-padT-padB;
+    ctx.strokeStyle="rgba(140,150,180,.15)";ctx.fillStyle="#8b96b3";ctx.font="11px Inter,Arial";ctx.textAlign="right";ctx.lineWidth=1;
+    for(var g=0;g<=4;g++){var val=maxV*g/4;var gy=padT+plotH-(plotH*g/4);ctx.beginPath();ctx.moveTo(padL,gy);ctx.lineTo(W-padR,gy);ctx.stroke();ctx.fillText(shortNum(val),padL-6,gy+4);}
+    ctx.textAlign="center";ctx.fillStyle="#8b96b3";ctx.fillText("$0",padL,padT-4);ctx.fillText("$"+shortNum(total),W-padR,padT-4);
+    function x(i){return padL+plotW*(i/months);}
+    function y(v){return padT+plotH-(plotH*(v/maxV));}
+    var grad=ctx.createLinearGradient(0,padT,0,padT+plotH);
+    grad.addColorStop(0,"rgba(108,140,255,.35)");grad.addColorStop(1,"rgba(108,140,255,0)");
+    ctx.beginPath();ctx.moveTo(x(0),y(pts[0]));
+    for(var i=1;i<=months;i++)ctx.lineTo(x(i),y(pts[i]));
+    ctx.lineTo(x(months),padT+plotH);ctx.lineTo(x(0),padT+plotH);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+    ctx.beginPath();ctx.moveTo(x(0),y(pts[0]));
+    for(var i=1;i<=months;i++)ctx.lineTo(x(i),y(pts[i]));
+    ctx.strokeStyle="#6c8cff";ctx.lineWidth=2.5;ctx.stroke();
+    ctx.beginPath();ctx.arc(x(months),y(total),5,0,Math.PI*2);ctx.fillStyle="#a06bff";ctx.fill();
+    var growth=total-inv;
+    var stats=document.getElementById("wealthStats");
+    stats.innerHTML='<div class="calc-result"><div class="row"><span>Final value</span><span>'+fmt(total)+'</span></div>'
+      +'<div class="row"><span>You contribute</span><span>'+fmt(inv)+'</span></div>'
+      +'<div class="row"><span>Growth from compounding</span><span>'+fmt(growth)+'</span></div></div>';
+  }
+  document.getElementById("wMonthly").addEventListener("input",function(){if(owns().wealth)drawWealth();});
+  document.getElementById("wYears").addEventListener("input",function(){if(owns().wealth)drawWealth();});
+  document.getElementById("wRate").addEventListener("input",function(){if(owns().wealth)drawWealth();});
+
+  function generateCopy(){
+    var name=document.getElementById("cpName").value.trim()||"Your product";
+    var desc=document.getElementById("cpDesc").value.trim();
+    var tone=document.getElementById("cpTone").value;
+    var aud=document.getElementById("cpAudience").value.trim();
+    var out=document.getElementById("cpOut");
+    out.style.display="block";
+    if(!desc){out.textContent="Add a one-line description of what it does first.";return;}
+    var core=desc.replace(/\.$/,"");
+    var tag;
+    if(tone==="Friendly")tag="\""+name+"\" — because "+audTag(aud)+" deserve simpler. "+cap(core)+".";
+    else if(tone==="Professional")tag=name+": "+core+". Results you can measure.";
+    else if(tone==="Bold / Punchy")tag="Stop waiting. "+name+" moves. "+cap(core)+".";
+    else tag=name+". "+core+".";
+    var shortDesc=name+" is "+core.toLowerCase()+". Built to "+benefit(aud)+", "+name+" helps "+audTag(aud)+" get there faster with less effort.";
+    var caps=[
+      "Swipe for the secret 👉 "+tag+" #"+hashtag(name),
+      "Every day, "+audTag(aud)+" waste time on this. "+name+" fixes it. "+hashtag(name)+" #simple",
+      "We built "+name+" so you never have to think about "+core.toLowerCase()+" again. "+hashtag(name)
+    ];
+    var bullets="• "+cap(core)+"\n• Instant, right in your browser\n• Works offline, no account needed\n• 100% private — your data stays with you";
+    out.textContent="—— TAGLINE ——\n"+tag+"\n\n—— SHORT DESCRIPTION ——\n"+shortDesc+"\n\n—— SOCIAL CAPTIONS ——\n"+caps.join("\n\n")+"\n\n—— KEY FEATURES ——\n"+bullets;
+  }
+  function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+  function audTag(a){return a?a.toLowerCase():"people";}
+  function benefit(a){return a?"solve their biggest pain point":"make everyday life a little easier";}
+  function hashtag(name){return name.toLowerCase().replace(/[^a-z0-9]/g,"");}
+  document.getElementById("cpGo").addEventListener("click",function(){if(owns().copy)generateCopy();});
+
+  /* ---------- TABS ---------- */
+  function switchTab(tab){
+    document.querySelectorAll(".tab").forEach(function(t){t.classList.toggle("active",t.dataset.tab===tab);});
+    var chat=document.getElementById("chat");
+    var pm=document.getElementById("page-money");
+    var pt=document.getElementById("page-text");
+    var pp=document.getElementById("page-premium");
+    chat.style.display=(tab==="chat")?"flex":"none";
+    pm.style.display=(tab==="money")?"block":"none";
+    pt.style.display=(tab==="text")?"block":"none";
+    pp.style.display=(tab==="premium")?"block":"none";
+  }
+  document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){switchTab(t.dataset.tab);});});
+
+  /* ---------- THEME ---------- */
+  function applyTheme(th){document.documentElement.setAttribute("data-theme",th);try{localStorage.setItem(THEME_KEY,th);}catch(e){}}
+  document.getElementById("themeBtn").addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme")||"dark";
+    applyTheme(cur==="dark"?"light":"dark");
+  });
+
+  /* ---------- EXPORT ---------- */
+  document.getElementById("exportBtn").addEventListener("click",function(){
+    var lines=history.map(function(m){return (m.role==="user"?"YOU: ":"AURI: ")+m.text;}).join("\n\n");
+    var blob=new Blob(["AURI conversation\n\n"+lines],{type:"text/plain"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="auri-chat.txt";a.click();
+  });
+
+  /* ---------- AI MENU ---------- */
+  function openAISettings(){
+    var c=getAIConfig()||{};
+    var base=prompt("API base URL (leave for OpenAI):",c.baseUrl||"https://api.openai.com/v1");if(base===null)return;
+    var key=prompt("API key (leave blank to keep current):",c.apiKey||"");if(key===null)return;
+    var model=prompt("Model name:",c.model||"gpt-4o-mini");if(model===null)return;
+    if(key===""&&c.apiKey)key=c.apiKey;
+    if(!key){localStorage.removeItem(AI_CONFIG_KEY);updateModeUI();addMessage("ai","<p>AI provider cleared. Back to the built-in local engine — works with no key.</p>");return;}
+    localStorage.setItem(AI_CONFIG_KEY,JSON.stringify({baseUrl:base||"https://api.openai.com/v1",apiKey:key,model:model||"gpt-4o-mini"}));
+    updateModeUI();addMessage("ai","<p>✅ AI provider connected (<code>"+esc(model||"gpt-4o-mini")+"</code>). Clear it anytime to return to the local engine.</p>");
+  }
+
+  /* ---------- WIRE UP ---------- */
+  sendBtn.addEventListener("click",send);
+  inputEl.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
+  inputEl.addEventListener("input",autoGrow);
+  document.getElementById("clearBtn").addEventListener("click",clearChat);
+  document.getElementById("modeBtn").addEventListener("click",openAISettings);
+  document.querySelectorAll(".chip").forEach(function(chip){chip.addEventListener("click",function(){inputEl.value=chip.textContent;send();});});
+
+  var savedTheme="dark";try{savedTheme=localStorage.getItem(THEME_KEY)||"dark";}catch(e){}
+  applyTheme(savedTheme);
+  renderFields();
+  updateModeUI();
+  txtUpdateStats();
+  document.querySelectorAll("#txtSeg button").forEach(function(b){b.classList.toggle("active",b.dataset.tool==="upper");});
+  restoreChat();
+  updatePremiumUI();
+})();
+</script>
+</body>
+</html>
