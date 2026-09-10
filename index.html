@@ -311,7 +311,6 @@
   var THEME_KEY = "auri_theme";
   var CHAT_KEY = "auri_chat";
 
-  /* ---------- PWA manifest ---------- */
   try {
     var man = {
       name: "AURI", short_name: "AURI", start_url: ".",
@@ -322,7 +321,6 @@
     mEl.href = "data:application/manifest+json;base64," + btoa(JSON.stringify(man));
   } catch (e) {}
 
-  /* ---------- LOCAL KNOWLEDGE ENGINE ---------- */
   function localReply(raw) {
     var q = raw.toLowerCase();
     if (/^(hi|hello|hey|yo|sup|howdy|good (morning|afternoon|evening))([!.]*)$/.test(q)) {
@@ -394,7 +392,6 @@
       + "<p>Give me a bit more detail and I'll give you a specific, concrete answer.</p>";
   }
 
-  /* ---------- OPTIONAL AI PROVIDER ---------- */
   function getAIConfig(){try{return JSON.parse(localStorage.getItem(AI_CONFIG_KEY)||"null");}catch(e){return null;}}
   function aiEnabled(){var c=getAIConfig();return !!(c&&c.apiKey);}
   async function aiReply(history, raw){
@@ -410,7 +407,6 @@
     return data.choices[0].message.content||"…";
   }
 
-  /* ---------- RENDER + CHAT + PERSISTENCE ---------- */
   function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
   var chatEl=document.getElementById("chat");
   var inputEl=document.getElementById("input");
@@ -504,7 +500,6 @@
     chatEl.scrollTop=chatEl.scrollHeight;
   }
 
-  /* ---------- MONEY TOOLS ---------- */
   var tools={
     compound:{label:"Compound Growth",fields:[
       {k:"principal",label:"Starting amount ($)",type:"number",val:"1000"},
@@ -610,7 +605,6 @@
   }
   function fmtCur(n){var r=Math.round(n*100)/100;return r.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
 
-  /* ---------- TEXT TOOLS ---------- */
   function txtStats(s){
     var words=s.trim()?s.trim().split(/\s+/).length:0;
     var chars=s.length;var charsNoSpace=s.replace(/\s/g,"").length;
@@ -656,7 +650,6 @@
     if(navigator.clipboard&&lastResult){navigator.clipboard.writeText(lastResult);document.getElementById("txtCopy").textContent="copied ✓";setTimeout(function(){document.getElementById("txtCopy").textContent="Copy result";},1400);}
   });
 
-  /* ---------- PREMIUM ---------- */
   var PREM_KEY="auri_premium";
   function owns(){try{return JSON.parse(localStorage.getItem(PREM_KEY)||"{}");}catch(e){return {};}}
   function updatePremiumUI(){
@@ -673,8 +666,25 @@
       document.getElementById("copyPrice").className="owned";
     }
   }
-  document.getElementById("unlockWealth").addEventListener("click",function(){var o=owns();o.wealth=true;localStorage.setItem(PREM_KEY,JSON.stringify(o));updatePremiumUI();});
-  document.getElementById("unlockCopy").addEventListener("click",function(){var o=owns();o.copy=true;localStorage.setItem(PREM_KEY,JSON.stringify(o));updatePremiumUI();});
+  /* ---------- STRIPE PAYMENT LINKS ---------- */
+  var PAY_LINKS={
+    wealth:"https://buy.stripe.com/test_fZueVc3NAh10cWYeCwaEE00",
+    copy:"https://buy.stripe.com/test_6oU83QbGG9KM8e8aEE01"
+  };
+  document.getElementById("unlockWealth").addEventListener("click",function(){window.open(PAY_LINKS.wealth,"_blank");});
+  document.getElementById("unlockCopy").addEventListener("click",function(){window.open(PAY_LINKS.copy,"_blank");});
+
+  /* On return from checkout, the payment link redirects with ?unlock=wealth|copy */
+  function grantFromUrl(){
+    try{
+      var p=new URLSearchParams(window.location.search);
+      var u=p.get("unlock");
+      var o=owns();var changed=false;
+      if(u==="wealth"){o.wealth=true;changed=true;}
+      if(u==="copy"){o.copy=true;changed=true;}
+      if(changed){localStorage.setItem(PREM_KEY,JSON.stringify(o));updatePremiumUI();}
+    }catch(e){}
+  }
 
   function shortNum(n){if(n>=1e6)return (n/1e6).toFixed(1)+"M";if(n>=1e3)return (n/1e3).toFixed(0)+"K";return Math.round(n);}
   function drawWealth(){
@@ -746,7 +756,6 @@
   function hashtag(name){return name.toLowerCase().replace(/[^a-z0-9]/g,"");}
   document.getElementById("cpGo").addEventListener("click",function(){if(owns().copy)generateCopy();});
 
-  /* ---------- TABS ---------- */
   function switchTab(tab){
     document.querySelectorAll(".tab").forEach(function(t){t.classList.toggle("active",t.dataset.tab===tab);});
     var chat=document.getElementById("chat");
@@ -760,21 +769,18 @@
   }
   document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){switchTab(t.dataset.tab);});});
 
-  /* ---------- THEME ---------- */
   function applyTheme(th){document.documentElement.setAttribute("data-theme",th);try{localStorage.setItem(THEME_KEY,th);}catch(e){}}
   document.getElementById("themeBtn").addEventListener("click",function(){
     var cur=document.documentElement.getAttribute("data-theme")||"dark";
     applyTheme(cur==="dark"?"light":"dark");
   });
 
-  /* ---------- EXPORT ---------- */
   document.getElementById("exportBtn").addEventListener("click",function(){
     var lines=history.map(function(m){return (m.role==="user"?"YOU: ":"AURI: ")+m.text;}).join("\n\n");
     var blob=new Blob(["AURI conversation\n\n"+lines],{type:"text/plain"});
     var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="auri-chat.txt";a.click();
   });
 
-  /* ---------- AI MENU ---------- */
   function openAISettings(){
     var c=getAIConfig()||{};
     var base=prompt("API base URL (leave for OpenAI):",c.baseUrl||"https://api.openai.com/v1");if(base===null)return;
@@ -786,7 +792,6 @@
     updateModeUI();addMessage("ai","<p>✅ AI provider connected (<code>"+esc(model||"gpt-4o-mini")+"</code>). Clear it anytime to return to the local engine.</p>");
   }
 
-  /* ---------- WIRE UP ---------- */
   sendBtn.addEventListener("click",send);
   inputEl.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
   inputEl.addEventListener("input",autoGrow);
@@ -802,6 +807,7 @@
   document.querySelectorAll("#txtSeg button").forEach(function(b){b.classList.toggle("active",b.dataset.tool==="upper");});
   restoreChat();
   updatePremiumUI();
+  grantFromUrl();
 })();
 </script>
 </body>
