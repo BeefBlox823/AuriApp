@@ -787,7 +787,7 @@
   inputEl.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
   inputEl.addEventListener("input",autoGrow);
   document.getElementById("clearBtn").addEventListener("click",clearChat);
-  document.getElementById("modeBtn").addEventListener("click",openAISettings);
+  
   document.querySelectorAll(".chip").forEach(function(chip){chip.addEventListener("click",function(){inputEl.value=chip.textContent;send();});});
 
   var savedTheme="dark";try{savedTheme=localStorage.getItem(THEME_KEY)||"dark";}catch(e){}
