@@ -781,16 +781,7 @@
     var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="auri-chat.txt";a.click();
   });
 
-  function openAISettings(){
-    var c=getAIConfig()||{};
-    var base=prompt("API base URL (leave for OpenAI):",c.baseUrl||"https://api.openai.com/v1");if(base===null)return;
-    var key=prompt("API key (leave blank to keep current):",c.apiKey||"");if(key===null)return;
-    var model=prompt("Model name:",c.model||"gpt-4o-mini");if(model===null)return;
-    if(key===""&&c.apiKey)key=c.apiKey;
-    if(!key){localStorage.removeItem(AI_CONFIG_KEY);updateModeUI();addMessage("ai","<p>AI provider cleared. Back to the built-in local engine — works with no key.</p>");return;}
-    localStorage.setItem(AI_CONFIG_KEY,JSON.stringify({baseUrl:base||"https://api.openai.com/v1",apiKey:key,model:model||"gpt-4o-mini"}));
-    updateModeUI();addMessage("ai","<p>✅ AI provider connected (<code>"+esc(model||"gpt-4o-mini")+"</code>). Clear it anytime to return to the local engine.</p>");
-  }
+  
 
   sendBtn.addEventListener("click",send);
   inputEl.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}});
